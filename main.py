@@ -19,7 +19,7 @@ YELLOW = (255, 255, 0)
 LIGHT_RED = (255, 200, 200)
 ORANGE = (255, 165, 0)
 
-# 迷宫地图：0=空地，1=墙，2=宝藏，3=出口，9=敌人出生点
+# 迷宫地图
 maze = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     [1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,2,0,0,3,1],
@@ -33,21 +33,17 @@ maze = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 ]
 
-# 初始定位
-player_pos = [1, 1]              # 玩家起始位置
-guard_pos = [1, 8]               # 守卫起始位置（由地图中的9定义）
-guard_path = [(1, 8), (5, 8)]    # 守卫巡逻路径
-guard_index = 0                 # 当前目标路径点下标
+player_pos = [1, 1]
+guard_pos = [1, 8]
+guard_path = [(1, 8), (5, 8)]
+guard_index = 0
 
-# 宝藏统计
 got_treasures = 0
 total_treasures = sum(row.count(2) for row in maze)
 
-# 炸弹与爆炸记录
-bombs = []          # [(x, y, 放置时间)]
-explosions = []     # [(x, y, 结束时间)]
+bombs = []
+explosions = []
 
-# 绘图函数
 def draw_maze(screen):
     for y in range(ROWS):
         for x in range(COLS):
@@ -152,7 +148,6 @@ def run():
 
         now = time.time()
 
-        # 检查爆炸时间
         for bx, by, t in bombs[:]:
             if now - t >= 2:
                 area = explode(bx, by)
@@ -164,7 +159,6 @@ def run():
             if now - t >= 1:
                 explosions.remove((ex, ey, t))
 
-        # 守卫被炸中
         for ex, ey, _ in explosions:
             if (guard_pos[0], guard_pos[1]) == (ex, ey):
                 show_end_screen(screen, "守卫被炸晕，胜利！", GREEN)
