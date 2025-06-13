@@ -4,8 +4,9 @@ import sys
 # 屏幕与格子设置
 WIDTH, HEIGHT = 640, 480
 TILE_SIZE = 32
-ROWS = HEIGHT // TILE_SIZE
-COLS = WIDTH // TILE_SIZE
+ROWS = len(maze)
+COLS = len(maze[0])
+
 
 # 颜色定义
 BLACK = (0, 0, 0)
