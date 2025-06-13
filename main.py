@@ -1,13 +1,6 @@
 import pygame
 import sys
 
-# 屏幕与格子设置
-WIDTH, HEIGHT = 640, 480
-TILE_SIZE = 32
-ROWS = len(maze)
-COLS = len(maze[0])
-
-
 # 颜色定义
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -32,11 +25,21 @@ maze = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 ]
 
-# 初始定位
-player_pos = [1, 1]              # 玩家起始位置
-guard_pos = [1, 8]               # 守卫起始位置（由地图中的9定义）
-guard_path = [(1, 8), (5, 8)]    # 守卫巡逻路径
-guard_index = 0                 # 当前目标路径点下标
+# 先定义地图后再确定行列数
+ROWS = len(maze)           # 10
+COLS = len(maze[0])        # 20
+
+# 屏幕与格子大小
+TILE_SIZE = 32
+WIDTH, HEIGHT = COLS * TILE_SIZE, ROWS * TILE_SIZE
+
+# 玩家初始位置
+player_pos = [1, 1]
+
+# 守卫初始位置及巡逻路径
+guard_pos = [1, 8]
+guard_path = [(1, 8), (5, 8)]
+guard_index = 0
 
 # 宝藏统计
 got_treasures = 0
