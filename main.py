@@ -38,6 +38,9 @@ guard_pos = [1, 8]
 guard_path = [(1, 8), (5, 8)]
 guard_index = 0
 
+last_move_time = 0
+move_delay = 0.15  # 玩家每次移动间隔
+
 got_treasures = 0
 total_treasures = sum(row.count(2) for row in maze)
 
@@ -65,12 +68,16 @@ def draw_guard(screen):
     x, y = guard_pos
     rect = pygame.Rect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE)
     pygame.draw.rect(screen, RED, rect)
-    for i in range(1, 4):
-        vy = y + i
-        if vy >= ROWS or maze[vy][x] == 1:
-            break
-        vrect = pygame.Rect(x*TILE_SIZE, vy*TILE_SIZE, TILE_SIZE, TILE_SIZE)
-        pygame.draw.rect(screen, LIGHT_RED, vrect)
+    for dx, dy in [(0,1), (0,-1), (1,0), (-1,0)]:
+        for i in range(1, 4):
+            vx, vy = x + dx*i, y + dy*i
+            if 0 <= vx < COLS and 0 <= vy < ROWS:
+                if maze[vy][vx] == 1:
+                    break
+                vrect = pygame.Rect(vx*TILE_SIZE, vy*TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                pygame.draw.rect(screen, LIGHT_RED, vrect)
+            else:
+                break
 
 def draw_bombs(screen):
     for bx, by, _ in bombs:
@@ -85,11 +92,16 @@ def draw_explosions(screen):
 def check_guard_sight():
     gx, gy = guard_pos
     px, py = player_pos
-    if px == gx and py > gy and py - gy <= 3:
-        for y in range(gy + 1, py):
-            if maze[y][gx] == 1:
-                return False
-        return True
+    directions = [(0,1), (0,-1), (1,0), (-1,0)]
+    for dx, dy in directions:
+        for i in range(1, 4):
+            vx, vy = gx + dx*i, gy + dy*i
+            if not (0 <= vx < COLS and 0 <= vy < ROWS):
+                break
+            if maze[vy][vx] == 1:
+                break
+            if (vx, vy) == (px, py):
+                return True
     return False
 
 def move_guard():
@@ -132,7 +144,7 @@ def explode(x, y):
     return positions
 
 def run():
-    global got_treasures
+    global got_treasures, last_move_time
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("小偷游戏 - 炸弹迷宫")
@@ -186,10 +198,11 @@ def run():
         if keys[pygame.K_LEFT]: dx = -1
         if keys[pygame.K_RIGHT]: dx = 1
 
-        if dx or dy:
+        if (dx or dy) and (now - last_move_time >= move_delay):
             nx, ny = player_pos[0] + dx, player_pos[1] + dy
             if 0 <= nx < COLS and 0 <= ny < ROWS and maze[ny][nx] != 1:
                 player_pos[0], player_pos[1] = nx, ny
+                last_move_time = now
 
         x, y = player_pos
         if maze[y][x] == 2:
@@ -203,7 +216,7 @@ def run():
 
         move_guard()
         pygame.display.flip()
-        clock.tick(10)
+        clock.tick(60)
 
     pygame.quit()
 
