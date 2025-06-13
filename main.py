@@ -1,6 +1,12 @@
 import pygame
 import sys
 
+# 屏幕与格子设置
+WIDTH, HEIGHT = 640, 480
+TILE_SIZE = 32
+ROWS = HEIGHT // TILE_SIZE
+COLS = WIDTH // TILE_SIZE
+
 # 颜色定义
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -25,21 +31,11 @@ maze = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 ]
 
-# 先定义地图后再确定行列数
-ROWS = len(maze)           # 10
-COLS = len(maze[0])        # 20
-
-# 屏幕与格子大小
-TILE_SIZE = 32
-WIDTH, HEIGHT = COLS * TILE_SIZE, ROWS * TILE_SIZE
-
-# 玩家初始位置
-player_pos = [1, 1]
-
-# 守卫初始位置及巡逻路径
-guard_pos = [1, 8]
-guard_path = [(1, 8), (5, 8)]
-guard_index = 0
+# 初始定位
+player_pos = [1, 1]              # 玩家起始位置
+guard_pos = [1, 8]               # 守卫起始位置（由地图中的9定义）
+guard_path = [(1, 8), (5, 8)]    # 守卫巡逻路径
+guard_index = 0                  # 当前目标路径点下标
 
 # 宝藏统计
 got_treasures = 0
@@ -81,24 +77,29 @@ def check_guard_sight():
     gx, gy = guard_pos
     px, py = player_pos
     if px == gx and py > gy and py - gy <= 3:
+        # 检查视线间是否有墙阻挡
         for y in range(gy + 1, py):
             if maze[y][gx] == 1:
                 return False
         return True
     return False
 
+def can_move_to(x, y):
+    # 判断目标位置是否在地图范围内且非墙体
+    return 0 <= x < COLS and 0 <= y < ROWS and maze[y][x] != 1
+
 def move_guard():
-    # 守卫沿路径巡逻移动
     global guard_index
     gx, gy = guard_pos
     tx, ty = guard_path[guard_index]
-    if gx < tx:
+    # 守卫朝目标点移动，先横向后纵向
+    if gx < tx and can_move_to(gx + 1, gy):
         guard_pos[0] += 1
-    elif gx > tx:
+    elif gx > tx and can_move_to(gx - 1, gy):
         guard_pos[0] -= 1
-    elif gy < ty:
+    elif gy < ty and can_move_to(gx, gy + 1):
         guard_pos[1] += 1
-    elif gy > ty:
+    elif gy > ty and can_move_to(gx, gy - 1):
         guard_pos[1] -= 1
     else:
         guard_index = (guard_index + 1) % len(guard_path)
@@ -117,6 +118,12 @@ def show_end_screen(screen, message, color):
             if event.type == pygame.KEYDOWN or event.type == pygame.QUIT:
                 waiting = False
 
+def draw_ui(screen, got, total):
+    # 绘制界面信息：已偷宝藏数
+    font = pygame.font.SysFont("Arial", 24)
+    text = font.render(f"宝藏：{got}/{total}", True, WHITE)
+    screen.blit(text, (10, HEIGHT - 30))
+
 def run():
     global got_treasures
     pygame.init()
@@ -124,12 +131,15 @@ def run():
     pygame.display.set_caption("小偷游戏 - 夜间迷宫")
     clock = pygame.time.Clock()
 
+    move_cooldown = 0  # 移动冷却，避免按键过快连续移动
+
     # 主循环
     while True:
         screen.fill(BLACK)
         draw_maze(screen)
         draw_guard(screen)
         draw_player(screen)
+        draw_ui(screen, got_treasures, total_treasures)
 
         # 守卫发现玩家则失败
         if check_guard_sight():
@@ -140,20 +150,25 @@ def run():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            # 玩家按键移动只响应KEYDOWN事件，避免连跳
+            if event.type == pygame.KEYDOWN and move_cooldown == 0:
+                dx = dy = 0
+                if event.key == pygame.K_UP:
+                    dy = -1
+                elif event.key == pygame.K_DOWN:
+                    dy = 1
+                elif event.key == pygame.K_LEFT:
+                    dx = -1
+                elif event.key == pygame.K_RIGHT:
+                    dx = 1
 
-        # 读取玩家输入方向
-        keys = pygame.key.get_pressed()
-        dx = dy = 0
-        if keys[pygame.K_UP]: dy = -1
-        if keys[pygame.K_DOWN]: dy = 1
-        if keys[pygame.K_LEFT]: dx = -1
-        if keys[pygame.K_RIGHT]: dx = 1
+                nx, ny = player_pos[0] + dx, player_pos[1] + dy
+                if can_move_to(nx, ny):
+                    player_pos[0], player_pos[1] = nx, ny
+                    move_cooldown = 5  # 设置冷却，单位帧
 
-        # 判断新位置是否可走
-        if dx or dy:
-            nx, ny = player_pos[0] + dx, player_pos[1] + dy
-            if 0 <= nx < COLS and 0 <= ny < ROWS and maze[ny][nx] != 1:
-                player_pos[0], player_pos[1] = nx, ny
+        if move_cooldown > 0:
+            move_cooldown -= 1
 
         # 玩家当前位置处理
         x, y = player_pos
@@ -171,7 +186,7 @@ def run():
 
         move_guard()
         pygame.display.flip()
-        clock.tick(10)
+        clock.tick(30)  # 30帧刷新
 
     pygame.quit()
 
